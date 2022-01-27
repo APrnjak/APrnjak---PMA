@@ -1,0 +1,134 @@
+﻿
+@{
+    ViewData["Title"] = "Post";
+}
+
+@using Microsoft.AspNetCore.Identity;
+
+<!-- Page Container -->
+<div class="w3-container w3-content" style="max-width:1400px;margin-top:80px">
+    <!-- The Grid -->
+    <div class="w3-row">
+
+        <!-- Middle Column -->
+        <div class="w3-container w3-card w3-white w3-round w3-margin" style="width:90%;opacity:0.95">
+            <table class="table table-bordered" id="tablica">
+                <thead id="thead"></thead>
+                <tbody id="tbody"></tbody>
+            </table>
+        </div>
+
+    </div>
+</div>
+
+
+<script>
+    'use strict'
+
+    function appendTableHead(single) {
+        let thead = document.getElementById("thead");
+        let tbody = document.getElementById("tbody");
+
+        thead.innerHTML = "";  //kada ponovno pozovemo api da se ne poduplaju nazivi stupaca
+        tbody.innerHTML = "";
+
+        let header = domHelper.createTableHeader(single);
+        thead.appendChild(header);
+    }
+
+    function appendToTable(data) {
+
+        posts = data;
+        appendTableHead(data[0]);
+        let tbody = document.getElementById('tbody');
+
+        for (var i = 0; i < data.length; i++) {
+            let row = document.createElement("tr");
+            var objekt = data[i].objekt.vlasnik + " - " + data[i].objekt.naziv;
+            let podaci = [data[i].id, data[i].sadrzaj, data[i].datum, data[i].grad.naziv, objekt]
+            for (var j = 0; j < podaci.length + 1; j++) {
+                let td = document.createElement("td");
+                td.setAttribute("class", "align-middle");
+                if (j == podaci.length) {  //ako smo ispisali sve podatke sada trebamo dodati dva botuna
+                    let button = document.createElement("button");
+                    button.id = podaci[0]; //saljemo id-knjige da znamo koji element trebamo izbrisati
+                    button.setAttribute("class", "btn btn-link");
+                    button.onclick = function () { Delete(podaci[0]); }; //pozivamo odgovarajuci funkciju i parametre
+                    let span = document.createElement("span");
+                    span.setAttribute("class", "material-icons");
+                    let t = document.createTextNode("Delete");
+                    span.appendChild(t);
+                    td.appendChild(button);
+                    button.appendChild(span);
+
+
+                    let button2 = document.createElement("button");
+                    button2.id = podaci[0];
+                    button2.setAttribute("class", "btn btn-link");
+                    button2.onclick = function () { Update(podaci); };
+                    td.appendChild(button2);
+                    let span1 = document.createElement("span");
+                    span1.setAttribute("class", "material-icons");
+                    let t1 = document.createTextNode("Update");
+                    span1.appendChild(t1);
+                    button2.appendChild(span1);
+
+
+                }
+                else { //ako nije ispisao sve podatke - stvori obican tekstNode
+                    let text = document.createTextNode(podaci[j]);
+                    td.appendChild(text);
+                }
+                row.appendChild(td);
+            }
+            tbody.appendChild(row);
+        }
+    }
+
+    function Delete(id) {
+        var authorization = "@User.Identity.Name.ToString()";
+        if (authorization == "Klara") {
+            if (confirm("Sigurno želite izbrisati knjigu sa ID-om " + id)) {
+                axios.delete(`/api/posts/delete/${id}`,id).then(response => appendToTable(response.data));
+                alert("Podatak je izbrisan");
+            }
+            else {
+                return;
+            }
+        }
+        else {
+            window.location = "/Home/AccessDenied";
+        }
+    }
+
+    function Update(podaci) {
+        var authorization = "@User.Identity.Name.ToString()";
+        if (authorization == "Klara") {
+            sessionStorage.setItem("id", podaci[0]);
+            window.location.href = '/Post/UpdatePost';   //rutu radimo prema folderima Views
+        }
+        else {
+            window.location = "/Home/AccessDenied";
+        }
+    }
+
+    //odmah saljemo get zahtjev
+    //pri ulasku na ovaj View podatci ce nam se odmah ucitati u tablicu
+    var posts;
+    axios.get('/api/post').then(response => appendToTable(response.data));
+
+</script>
+
+<style>
+    body, h1, h2, h3, h4, h5, h6 {
+        font-family: "Karma", sans-serif;
+        background: url(https://images.unsplash.com/photo-1493770348161-369560ae357d?ixlib=rb-1.2.1&ixid=eyJhcHBfaWQiOjEyMDd9&auto=format&fit=crop&w=1050&q=80);
+        background-repeat: no-repeat;
+        background-size: 100%;
+    }
+
+    .w3-bar-block .w3-bar-item {
+        padding: 20px
+    }
+</style>
+
